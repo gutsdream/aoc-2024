@@ -27,7 +27,7 @@ mod tests {
     #[test]
     fn should_get_sorted_location_id_pairs() {
         // given
-        let mut pairs = vec![
+        let pairs = vec![
             "2 1",
             "3 4",
             "5 2",
