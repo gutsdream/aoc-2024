@@ -18,12 +18,9 @@ fn calculate_similarity_score(left: Vec<i32>, right: Vec<i32>) -> i32{
         hashmap.entry(x).and_modify(|x| *x += 1).or_insert(1);
     });
 
-    let mut similarity = 0;
-    left
-        .into_iter()
-        .for_each(|x| similarity += x * hashmap.get(&x).unwrap_or(&0));
-
-    similarity
+    left.into_iter()
+        .map(|x| x * hashmap.get(&x).unwrap_or(&0))
+        .sum()
 }
 
 #[cfg(test)]
