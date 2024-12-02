@@ -1,3 +1,4 @@
+use std::iter::zip;
 use day_01::get_location_id_pairs;
 
 fn main() {
@@ -12,14 +13,9 @@ fn main() {
 }
 
 fn calculate_total_distance(left: Vec<i32>, right: Vec<i32>) -> i32 {
-    let mut distance = 0;
-
-    for n in 0..left.len() {
-        let pair_dist = i32::abs(left[n] - right[n]);
-        distance += pair_dist;
-    }
-
-    distance
+    zip(left, right)
+        .map(|(x, y)| i32::abs(x - y))
+        .sum()
 }
 
 #[cfg(test)]
