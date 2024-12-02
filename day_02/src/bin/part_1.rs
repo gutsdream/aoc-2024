@@ -21,7 +21,7 @@ fn get_safe_level_report_count(input: String) -> usize {
         .filter(|x| is_report_safe(x))
         .collect::<Vec<_>>()
         .len();
-    
+
     safe_levels
 }
 
