@@ -1,9 +1,10 @@
+use std::env::current_dir;
 use std::fs;
 use std::iter::zip;
 use day_01::get_location_id_pairs;
 
 fn main() -> eyre::Result<()> {
-    let input = fs::read_to_string("../input.txt")?;
+    let input = fs::read_to_string("./input.txt")?;
 
     let (left, right) = get_location_id_pairs(input.lines()
         .collect());
