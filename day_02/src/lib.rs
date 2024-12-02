@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 pub fn get_level_reports(input: String) -> Vec<Vec<i32>>{
     input.lines()
         .map(|x| {
@@ -6,6 +8,20 @@ pub fn get_level_reports(input: String) -> Vec<Vec<i32>>{
                 .collect::<Vec<i32>>()
         })
         .collect()
+}
+
+pub fn is_report_safe(report: &Vec<i32>) -> bool {
+    let initial_order = report[0].cmp(&report[1]);
+
+    let comparisons : Vec<(Ordering, i32)> = report.windows(2)
+        .map(|pair| (pair[0].cmp(&pair[1]), i32::abs(pair[0] - pair[1])))
+        .collect();
+
+    let ordering_matches = comparisons.iter().all(|(ord, _)| ord == &initial_order);
+
+    let differences_within_range = comparisons.iter().all(| (_, diff)| diff >= &1 && diff <= &3);
+
+    ordering_matches && differences_within_range
 }
 
 #[cfg(test)]

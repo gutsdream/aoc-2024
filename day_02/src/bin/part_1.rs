@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::env::current_dir;
 use std::fs;
+use day_02::is_report_safe;
 
 fn main() -> eyre::Result<()> {
     let input = fs::read_to_string("./input.txt")?;
@@ -17,17 +18,10 @@ fn get_safe_level_report_count(input: String) -> usize {
 
     let safe_levels = level_reports
         .into_iter()
-        .map(|x| {
-            x.windows(2)
-                .map(|pair| (pair[0].cmp(&pair[1]), i32::abs(pair[0] - pair[1])))
-                .collect::<Vec<(Ordering, i32)>>()
-        })
-        .filter(|x|
-            x.iter().all(|(ord, _)| ord == &Ordering::Less) ||
-                x.iter().all(|(ord, _)| ord == &Ordering::Greater))
-        .filter(|x| x.iter().all(|(_, diff)| diff >= &1 && diff <= &3))
+        .filter(|x| is_report_safe(x))
         .collect::<Vec<_>>()
         .len();
+    
     safe_levels
 }
 
