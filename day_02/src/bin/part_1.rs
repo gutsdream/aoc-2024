@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-use std::env::current_dir;
 use std::fs;
 use day_02::is_report_safe;
 

@@ -1,4 +1,3 @@
-use std::env::current_dir;
 use std::fs;
 use std::iter::zip;
 use day_01::get_location_id_pairs;
