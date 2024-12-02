@@ -1,0 +1,59 @@
+use day_01::get_location_id_pairs;
+
+fn main() {
+    let input = include_str!("../input.txt");
+
+    let (left, right) = get_location_id_pairs(input.lines()
+        .collect());
+
+    let distance = calculate_total_distance(left, right);
+
+    println!("Part 1: {}", distance);
+}
+
+fn calculate_total_distance(left: Vec<i32>, right: Vec<i32>) -> i32 {
+    let mut distance = 0;
+
+    for n in 0..left.len() {
+        let pair_dist = i32::abs(left[n] - right[n]);
+        distance += pair_dist;
+    }
+
+    distance
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_calculate_total_distance() {
+        // given
+        let mut left = vec![
+            3,
+            4,
+            2,
+            1,
+            3,
+            3
+        ];
+
+        let mut right = vec![
+            4,
+            3,
+            5,
+            3,
+            9,
+            3
+        ];
+
+        left.sort();
+        right.sort();
+
+        // when
+        let result = calculate_total_distance(left, right);
+
+        // then
+        assert_eq!(result, 11);
+    }
+}
