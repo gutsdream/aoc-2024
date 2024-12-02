@@ -1,8 +1,9 @@
+use std::fs;
 use std::iter::zip;
 use day_01::get_location_id_pairs;
 
-fn main() {
-    let input = include_str!("../input.txt");
+fn main() -> eyre::Result<()> {
+    let input = fs::read_to_string("../input.txt")?;
 
     let (left, right) = get_location_id_pairs(input.lines()
         .collect());
@@ -10,6 +11,8 @@ fn main() {
     let distance = calculate_total_distance(left, right);
 
     println!("Part 1: {}", distance);
+
+    Ok(())
 }
 
 fn calculate_total_distance(left: Vec<i32>, right: Vec<i32>) -> i32 {

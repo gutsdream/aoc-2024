@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::fs;
 use day_01::get_location_id_pairs;
 
-fn main() {
-    let input = include_str!("../input.txt");
+fn main() -> eyre::Result<()> {
+    let input = fs::read_to_string("../input.txt")?;
 
     let (left, right) = get_location_id_pairs(input.lines()
         .collect());
@@ -10,6 +11,8 @@ fn main() {
     let similarity_score = calculate_similarity_score(left, right);
 
     println!("Part 2: {}", similarity_score);
+
+    Ok(())
 }
 
 fn calculate_similarity_score(left: Vec<i32>, right: Vec<i32>) -> i32{
