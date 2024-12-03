@@ -26,7 +26,6 @@ impl MulSwitch{
 }
 
 fn solve(input: String) -> eyre::Result<i32> {
-
     let mut mul_switches : Vec<MulSwitch> = vec![];
     let do_indices  = input.match_indices("do()").into_iter();
     let do_not_indices = input.match_indices("don't()").into_iter();
@@ -37,29 +36,13 @@ fn solve(input: String) -> eyre::Result<i32> {
     // Reverses list
     mul_switches.sort_by(|x, y| y.index.cmp(&x.index));
 
-    let max_range = input.len();
-    let regex = regex::Regex::new(r"(\d{1,3}),(\d{1,3})\)")?;
+    day_03::solve(input, &|i| {
+        if let Some(switch) =  mul_switches.iter().filter(|x| x.index < i).next(){
+            return !switch.enabled
+        }
 
-    Ok(input
-        .match_indices("mul(")
-        .filter_map(|(i, _)| {
-            if let Some(switch) =  mul_switches.iter().filter(|x| x.index < i).next(){
-                if switch.enabled == false {
-                    return None;
-                }
-            }
-
-            let mul_index = i + 4;
-            let maximum_slice_range = cmp::min(mul_index + 3 + 1 + 3 + 1, max_range);
-            let slice = &input[(mul_index)..maximum_slice_range];
-
-            let captures = regex.captures(slice)?;
-            let x : i32 = captures.get(1)?.as_str().parse().ok()?;
-            let y : i32 = captures.get(2)?.as_str().parse().ok()?;
-
-            Some( x * y )
-        })
-        .sum())
+        false
+    })
 }
 
 #[cfg(test)]
