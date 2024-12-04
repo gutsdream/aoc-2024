@@ -40,7 +40,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_x() -> eyre::Result<()> {
+    fn should_solve_part_1() -> eyre::Result<()> {
         // Given
         let input = "MMMSXXMASM
 MSAMXMSMSA
