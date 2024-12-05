@@ -1,25 +1,27 @@
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use itertools::Itertools;
+
 pub struct Puzzle {
-    rules: Vec<Vec<usize>>,
+    rules: HashMap<usize,Vec<usize>>,
     updates: Vec<Vec<usize>>,
 }
 
 impl From<&str> for Puzzle {
     fn from(input: &str) -> Puzzle {
-        let (rules, updates): (Vec<&str>, Vec<&str>) = input
+        let (rules_vec, updates): (Vec<&str>, Vec<&str>) = input
             .lines()
             .filter(|&x| x.len() > 2)
             .partition(|&x| x.contains('|'));
 
-        let rules = rules
+        let mut rules = HashMap::<usize, Vec<usize>>::new();
+        rules_vec
             .into_iter()
-            .filter_map(|x| {
-                Some(
-                    x.split('|')
-                        .filter_map(|x| x.parse::<usize>().ok())
-                        .collect(),
-                )
-            })
-            .collect();
+            .map(|pair| pair.split('|')
+                .filter_map(|page| page.parse::<usize>().ok())
+                .collect::<Vec<usize>>()
+            )
+            .for_each(|x| rules.entry(x[0]).or_default().push(x[1]));
 
         let updates = updates
             .into_iter()
@@ -63,47 +65,20 @@ impl Puzzle {
     }
 
     fn is_valid(&self, update: &Vec<usize>) -> bool {
-        let applicable_rules: Vec<&Vec<usize>> = self.applicable_rules(&update);
-
-        applicable_rules
-            .iter()
-            .all(|x| Self::is_rule_met(&update, x))
+        let empty = Vec::new();
+        let mut update_sorted = update.clone();
+        update_sorted.is_sorted_by(|a, b| self.rules.get(a).unwrap_or(&empty).iter().contains(&b))
     }
 
     pub fn correct_update(&self, mut update: Vec<usize>) -> Vec<usize> {
-        let mut corrected = vec![];
-        let mut applicable_rules: Vec<&Vec<usize>> = self.applicable_rules(&update);
-        let length = update.len();
+        let empty = Vec::new();
+        let mut update_sorted = update.clone();
+        update_sorted.sort_by(|a, b| match self.rules.get(a).unwrap_or(&empty).iter().contains(&b) {
+            true => {Ordering::Greater}
+            false => {Ordering::Less}
+        });
 
-        while corrected.len() < length {
-
-            // dbg!(&applicable_rules);
-            let absent_rhs: usize = update
-                .iter()
-                .find(|x| !applicable_rules.iter().any(|rule| &&rule[1] == x))
-                .map(|x| x.clone())
-                .unwrap();
-
-            // Remove any rules related to the sorted page
-            applicable_rules.retain(|rule| rule[0] != absent_rhs);
-            update.retain(|x| x != &absent_rhs);
-            corrected.push(absent_rhs);
-        }
-
-        corrected
-    }
-
-    fn applicable_rules(&self, update: &Vec<usize>) -> Vec<&Vec<usize>> {
-        self.rules
-            .iter()
-            .filter(|rule| update.contains(&rule[0]))
-            .filter(|rule| update.contains(&rule[1]))
-            .collect()
-    }
-
-    fn is_rule_met(update: &Vec<usize>, rule: &Vec<usize>) -> bool {
-        update.iter().position(|page| page == &rule[0])
-            < update.iter().position(|page| page == &rule[1])
+        update_sorted
     }
 }
 
