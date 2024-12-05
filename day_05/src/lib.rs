@@ -71,27 +71,26 @@ impl Puzzle {
     }
 
     pub fn correct_update(&self, mut update: Vec<usize>) -> Vec<usize> {
-        let applicable_rules: Vec<&Vec<usize>> = self.applicable_rules(&update);
+        let mut corrected = vec![];
+        let mut applicable_rules: Vec<&Vec<usize>> = self.applicable_rules(&update);
+        let length = update.len();
 
-        match applicable_rules
-            .into_iter()
-            .find(|rule| !Self::is_rule_met(&mut update, &rule))
-        {
-            None => update,
-            Some(broken_rule) => {
-                let left = update
-                    .iter()
-                    .position(|page| page == &broken_rule[0])
-                    .unwrap();
-                let right = update
-                    .iter()
-                    .position(|page| page == &broken_rule[1])
-                    .unwrap();
-                update.swap(left, right);
+        while corrected.len() < length {
 
-                self.correct_update(update)
-            }
+            // dbg!(&applicable_rules);
+            let absent_rhs: usize = update
+                .iter()
+                .find(|x| !applicable_rules.iter().any(|rule| &&rule[1] == x))
+                .map(|x| x.clone())
+                .unwrap();
+
+            // Remove any rules related to the sorted page
+            applicable_rules.retain(|rule| rule[0] != absent_rhs);
+            update.retain(|x| x != &absent_rhs);
+            corrected.push(absent_rhs);
         }
+
+        corrected
     }
 
     fn applicable_rules(&self, update: &Vec<usize>) -> Vec<&Vec<usize>> {
