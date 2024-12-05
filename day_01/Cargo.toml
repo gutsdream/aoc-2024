@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+divan = "0.1.17"
 eyre = "0.6.12"
+
+[[bench]]
+name = "day-01-bench"
+path = "benches/bench.rs"
+harness = false

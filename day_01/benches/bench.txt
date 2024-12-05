@@ -1,0 +1,43 @@
+
+running 2 tests
+ii
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+day_01_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ part1      54.59 µs      │ 142.1 µs      │ 55.55 µs      │ 57.14 µs      │ 100     │ 100
+│             max alloc:    │               │               │               │         │
+│               5           │ 5             │ 5             │ 5             │         │
+│               38.59 KB    │ 38.59 KB      │ 38.59 KB      │ 38.59 KB      │         │
+│             alloc:        │               │               │               │         │
+│               1004        │ 1004          │ 1004          │ 1004          │         │
+│               30.09 KB    │ 30.09 KB      │ 30.09 KB      │ 30.09 KB      │         │
+│             dealloc:      │               │               │               │         │
+│               1004        │ 1004          │ 1004          │ 1004          │         │
+│               54.57 KB    │ 54.57 KB      │ 54.57 KB      │ 54.57 KB      │         │
+│             grow:         │               │               │               │         │
+│               24          │ 24            │ 24            │ 24            │         │
+│               24.48 KB    │ 24.48 KB      │ 24.48 KB      │ 24.48 KB      │         │
+╰─ part2      70.45 µs      │ 85.28 µs      │ 72.4 µs       │ 72.84 µs      │ 100     │ 100
+              max alloc:    │               │               │               │         │
+                5           │ 5             │ 5             │ 5             │         │
+                38.59 KB    │ 38.59 KB      │ 38.59 KB      │ 38.59 KB      │         │
+              alloc:        │               │               │               │         │
+                1013        │ 1013          │ 1013          │ 1013          │         │
+                48.56 KB    │ 48.56 KB      │ 48.56 KB      │ 48.56 KB      │         │
+              dealloc:      │               │               │               │         │
+                1013        │ 1013          │ 1013          │ 1013          │         │
+                73.04 KB    │ 73.04 KB      │ 73.04 KB      │ 73.04 KB      │         │
+              grow:         │               │               │               │         │
+                24          │ 24            │ 24            │ 24            │         │
+                24.48 KB    │ 24.48 KB      │ 24.48 KB      │ 24.48 KB      │         │
+
