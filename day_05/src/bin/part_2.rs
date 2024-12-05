@@ -1,11 +1,12 @@
 use std::fs;
-use day_04::part_2;
+use day_05::Puzzle;
+
 fn main() -> eyre::Result<()> {
     let input = fs::read_to_string("./input.txt")?;
 
-    let result = part_2::solve(input);
+    let result = Puzzle::from(input.as_str()).sum_of_incorrect_updates();
 
-    println!("Part 2: {}", result?);
+    println!("Part 2: {}", result);
 
     Ok(())
 }

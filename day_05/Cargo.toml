@@ -1,5 +1,5 @@
 [package]
-name = "day_04"
+name = "day_05"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,6 +9,6 @@ eyre = "0.6.12"
 regex = "1.11.1"
 
 [[bench]]
-name = "day-04-bench"
+name = "day-05-bench"
 path = "benches/bench.rs"
 harness = false

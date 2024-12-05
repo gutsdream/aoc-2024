@@ -1,6 +1,7 @@
 use std::fs;
 use divan::AllocProfiler;
-use day_04::*;
+use day_05::Puzzle;
+
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();
 fn main() {
@@ -10,14 +11,12 @@ fn main() {
 
 #[divan::bench]
 fn part1() {
-    part_1::solve(
-        divan::black_box(fs::read_to_string("./input.txt").unwrap())
-    ).unwrap();
+    let input = divan::black_box(fs::read_to_string("./input.txt").unwrap());
+    Puzzle::from(input.as_str()).sum_of_correct_updates();
 }
 
 #[divan::bench]
 fn part2() {
-    part_2::solve(
-        divan::black_box(fs::read_to_string("./input.txt").unwrap())
-    ).unwrap();
+    let input = divan::black_box(fs::read_to_string("./input.txt").unwrap());
+    Puzzle::from(input.as_str()).sum_of_incorrect_updates();
 }
