@@ -85,22 +85,20 @@ impl Puzzle{
             .filter(|rule| update.contains(&rule[1]))
             .collect();
 
-        let broken_rules : Vec<&Vec<usize>> = applicable_rules
+        match applicable_rules
             .into_iter()
-            .filter(|rule| update.iter().position(|page| page == &rule[0]) > update.iter().position(|page| page == &rule[1]))
-            .collect();
+            .find(|rule| update.iter().position(|page| page == &rule[0]) > update.iter().position(|page| page == &rule[1])) {
+            None => {update}
+            Some(broken_rule) => {
+                let left = update.iter().position(|page| page == &broken_rule[0]).unwrap();
+                let right = update.iter().position(|page| page == &broken_rule[1]).unwrap();
+                update.swap(left, right);
 
-        if(broken_rules.len() == 0){
-            return update
+                self.correct_update(update)
+            }
         }
 
-        let left = update.iter().position(|page| page == &broken_rules[0][0]).unwrap();
-        let right = update.iter().position(|page| page == &broken_rules[0][1]).unwrap();
-        update.swap(left, right);
 
-        // dbg!(&update, &broken_rules);
-
-        self.correct_update(update)
     }
 }
 
