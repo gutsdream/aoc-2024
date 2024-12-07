@@ -1,5 +1,5 @@
 [package]
-name = "day_template"
+name = "day_07"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,6 +8,6 @@ divan = "0.1.16"
 eyre = "0.6.12"
 
 [[bench]]
-name = "day-template-bench"
+name = "day-07-bench"
 path = "benches/bench.rs"
 harness = false

@@ -1,5 +1,6 @@
 use std::fs;
-use day_05::Puzzle;
+use std::str::FromStr;
+use day_07::Puzzle;
 
 fn main() -> eyre::Result<()> {
     let input = fs::read_to_string("./input.txt")?;
