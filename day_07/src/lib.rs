@@ -1,22 +1,23 @@
 use std::str::FromStr;
-use crate::Operator::{Add, Multiply};
+use crate::Operator::{Add, Concatenate, Multiply};
 
 #[derive(Debug, Clone)]
 enum Operator{
     Add,
-    Subtract,
     Multiply,
-    Divide,
+    Concatenate
 }
-
-const ADD_AND_MULTIPLY: [Operator; 2] = [Add, Multiply];
 
 impl Operator{
     fn apply(&self, a: u64, b: u64) -> u64 {
         match self{
             Add => a + b,
             Multiply => a * b,
-            _ => todo!()
+            Concatenate => {
+                let length_b = b.checked_ilog10().unwrap_or(0) + 1;
+                let a_raised = a * 10_u64.pow(length_b);
+                a_raised + b
+            }
         }
     }
 }
@@ -54,9 +55,9 @@ impl UnoperatedEquation {
         Some(UnoperatedEquation { result, inputs })
     }
 
-    fn has_successful_variation(&self) -> bool{
+    fn has_successful_variation(&self, operators: &Vec<Operator>) -> bool{
         let pair_variations = self.inputs.windows(2)
-            .map(|window| ADD_AND_MULTIPLY.clone().into_iter()
+            .map(|window| operators.clone().into_iter()
                 .map(|op| Operation{
                     a: window[0],
                     b : window[1],
@@ -65,43 +66,29 @@ impl UnoperatedEquation {
                 .collect::<Vec<_>>())
             .collect::<Vec<_>>();
 
-
         let potential_equations = Self::gen_potential_equations(pair_variations);
 
         let results = potential_equations.iter().map(|x| x.calculate()).collect::<Vec<_>>();
+
         results.iter().any(|x| x == &self.result)
     }
 
     fn gen_potential_equations(pair_variations: Vec<Vec<Operation>>) -> Vec<Vec<Operation>> {
-        let initial:Vec<Vec<Operation>> = vec![vec![pair_variations[0][0].clone()], vec![pair_variations[0][1].clone()]];
+        let initial : Vec<Vec<Operation>> = pair_variations[0].clone().into_iter()
+            .map(|x| vec![x])
+            .collect();
 
         pair_variations.into_iter().skip(1).fold(initial, |acc, pair| {
-            let mut left: Vec<Vec<Operation>> = acc.clone().into_iter()
-                .map(|mut x| {
-                    x.push(pair[0].clone());
+            pair.iter()
+                .enumerate()
+                .map(|(i, x)| acc.clone().into_iter().map(|mut x| {
+                    x.push(pair[i].clone());
                     x
-                })
-                .collect();
-
-            let mut right: Vec<Vec<Operation>> = acc.clone().into_iter()
-                .map(|mut x| {
-                    x.push(pair[1].clone());
-                    x
-                })
-                .collect();
-
-            left.append(&mut right);
-
-            left
+                }).collect::<Vec<Vec<Operation>>>())
+                .flatten()
+                .collect()
         })
     }
-    // fn results_for_pairs(pair_variations: Vec<Vec<u64>>) -> Vec<u64>{
-    //     Self::build_results(vec![])
-    // }
-    //
-    // fn build_results(acc: Vec<u64>, pair: Vec<u64>) -> Vec<u64>{
-    //
-    // }
 }
 
 pub struct Puzzle {
@@ -127,11 +114,15 @@ impl FromStr for Puzzle {
 
 impl Puzzle {
     pub fn part_1(&self) -> u64 {
-        self.equations.iter().filter(|x| x.has_successful_variation()).map(|x| x.result).sum()
+        self.equations.iter()
+            .filter(|x| x.has_successful_variation(&vec![Add, Multiply]))
+            .map(|x| x.result).sum()
     }
 
     pub fn part_2(&self) -> u64 {
-        1
+        self.equations.iter()
+            .filter(|x| x.has_successful_variation(&vec![Add, Multiply, Concatenate]))
+            .map(|x| x.result).sum()
     }
 }
 
@@ -169,6 +160,6 @@ mod tests {
         let sum = puzzle.part_2();
 
         // Then
-        assert_eq!(1, sum);
+        assert_eq!(11387, sum);
     }
 }
