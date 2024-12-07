@@ -2,8 +2,6 @@ use std::fs;
 use divan::AllocProfiler;
 use day_05::Puzzle;
 
-#[global_allocator]
-static ALLOC: AllocProfiler = AllocProfiler::system();
 fn main() {
     // Run registered benchmarks.
     divan::main();

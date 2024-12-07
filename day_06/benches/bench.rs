@@ -3,8 +3,6 @@ use divan::AllocProfiler;
 use std::fs;
 use std::str::FromStr;
 
-#[global_allocator]
-static ALLOC: AllocProfiler = AllocProfiler::system();
 fn main() {
     // Run registered benchmarks.
     divan::main();

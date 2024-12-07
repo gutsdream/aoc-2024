@@ -2,8 +2,6 @@ use std::fs;
 use divan::AllocProfiler;
 use day_01::{calculate_similarity_score, calculate_total_distance};
 
-#[global_allocator]
-static ALLOC: AllocProfiler = AllocProfiler::system();
 fn main() {
     // Run registered benchmarks.
     divan::main();
