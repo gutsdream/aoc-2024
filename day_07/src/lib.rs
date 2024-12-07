@@ -95,7 +95,7 @@ impl UnoperatedEquation {
             .fold(initial, |acc, pair| {
                 pair.iter()
                     .enumerate()
-                    .map(|(i, x)| {
+                    .map(|(i, _)| {
                         acc.clone()
                             .into_iter()
                             .map(|mut x| {
