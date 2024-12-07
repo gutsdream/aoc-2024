@@ -1,7 +1,7 @@
+use day_06::Puzzle;
+use divan::AllocProfiler;
 use std::fs;
 use std::str::FromStr;
-use divan::AllocProfiler;
-use day_06::Puzzle;
 
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();

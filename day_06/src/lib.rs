@@ -1,8 +1,8 @@
 use crate::Direction::{East, North, South, West};
 use itertools::Itertools;
+use rayon::prelude::*;
 use std::collections::HashSet;
 use std::str::FromStr;
-use rayon::prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Direction {
@@ -156,20 +156,20 @@ impl FromStr for Puzzle {
     }
 }
 
-enum NavigateMapResult{
+enum NavigateMapResult {
     ReachedExit(HashSet<Point>),
-    EncounteredLoop
+    EncounteredLoop,
 }
 
 impl Puzzle {
     pub fn distinct_positions_visited(&self) -> usize {
         match Self::navigate_map(&self.map, &mut self.guard.clone()) {
-            NavigateMapResult::ReachedExit(points) => {points.iter().len()}
-            NavigateMapResult::EncounteredLoop => {0}
+            NavigateMapResult::ReachedExit(points) => points.iter().len(),
+            NavigateMapResult::EncounteredLoop => 0,
         }
     }
 
-    fn navigate_map(map : &Map, guard: &mut Guard) -> NavigateMapResult {
+    fn navigate_map(map: &Map, guard: &mut Guard) -> NavigateMapResult {
         let mut points_visited = HashSet::new();
         let mut obstructions_encountered = HashSet::new();
         points_visited.insert(guard.point.clone());
@@ -186,8 +186,8 @@ impl Puzzle {
                 }
                 WalkResult::ObstructedAt(point) => {
                     let obstruction_at_direction = (point, guard.direction.clone());
-                    if obstructions_encountered.contains(&obstruction_at_direction){
-                        return NavigateMapResult::EncounteredLoop
+                    if obstructions_encountered.contains(&obstruction_at_direction) {
+                        return NavigateMapResult::EncounteredLoop;
                     }
 
                     obstructions_encountered.insert(obstruction_at_direction);
@@ -202,19 +202,22 @@ impl Puzzle {
 
     pub fn potential_loop_opportunities(&self) -> usize {
         let positions_visited = match Self::navigate_map(&self.map, &mut self.guard.clone()) {
-            NavigateMapResult::ReachedExit(points) => {points}
-            NavigateMapResult::EncounteredLoop => {HashSet::new()}
+            NavigateMapResult::ReachedExit(points) => points,
+            NavigateMapResult::EncounteredLoop => HashSet::new(),
         };
 
-        positions_visited.par_iter().filter_map(|x| {
-            let map = self.map.with_obstruction_at(x);
-            let mut guard = self.guard.clone();
+        positions_visited
+            .par_iter()
+            .filter_map(|x| {
+                let map = self.map.with_obstruction_at(x);
+                let mut guard = self.guard.clone();
 
-            match Self::navigate_map(&map, &mut guard) {
-                NavigateMapResult::ReachedExit(_) => {None}
-                NavigateMapResult::EncounteredLoop => {Some(1)}
-            }
-        }).sum()
+                match Self::navigate_map(&map, &mut guard) {
+                    NavigateMapResult::ReachedExit(_) => None,
+                    NavigateMapResult::EncounteredLoop => Some(1),
+                }
+            })
+            .sum()
     }
 }
 
