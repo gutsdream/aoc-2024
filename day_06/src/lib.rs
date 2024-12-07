@@ -1,7 +1,8 @@
 use crate::Direction::{East, North, South, West};
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::str::FromStr;
+use rayon::prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Direction {
@@ -205,7 +206,7 @@ impl Puzzle {
             NavigateMapResult::EncounteredLoop => {HashSet::new()}
         };
 
-        positions_visited.iter().filter_map(|x| {
+        positions_visited.par_iter().filter_map(|x| {
             let map = self.map.with_obstruction_at(x);
             let mut guard = self.guard.clone();
 
@@ -220,7 +221,6 @@ impl Puzzle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
     const INPUT: &str = "....#.....
 .........#
 ..........
