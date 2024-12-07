@@ -5,7 +5,7 @@ fn main() -> eyre::Result<()> {
 
     let puzzle = Puzzle::from_str(&input).unwrap();
 
-    println!("Part 2: {}", puzzle.part_2());
+    println!("Part 1: {}", puzzle.part_1());
 
     Ok(())
 }
