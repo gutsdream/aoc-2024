@@ -1,4 +1,6 @@
 use std::fs;
+use std::str::FromStr;
+use day_07::Puzzle;
 
 fn main() {
     // Run registered benchmarks.
