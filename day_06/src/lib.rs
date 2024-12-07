@@ -1,8 +1,9 @@
+use std::collections::HashSet;
 use crate::Direction::{East, North, South, West};
 use std::str::FromStr;
 use itertools::Itertools;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Direction {
     North,
     East,
@@ -41,22 +42,26 @@ struct Guard {
     direction: Direction,
 }
 
+pub enum WalkResult{
+    WalkedTo(Point),
+    ObstructedAt(Point)
+}
+
 impl Guard {
     fn new(point: Point, direction: Direction) -> Self {
         Guard { point, direction }
     }
 
-    fn walk_or_turn(&mut self, map: &Map) -> Option<Point>{
-        let new_point = self.point.gen_point_for_direction(&self.direction)?;
+    fn try_walk(&mut self, map: &Map) -> WalkResult{
+        let new_point = self.point.gen_point_for_direction(&self.direction).unwrap();
 
         match map.point_is_obstructed(&new_point){
             true => {
-                self.turn();
-                None
+                WalkResult::ObstructedAt(new_point)
             }
             false => {
                 self.point = new_point.clone();
-                Some(new_point)
+                WalkResult::WalkedTo(new_point)
             }
         }
     }
@@ -79,7 +84,7 @@ impl Map {
 
     fn at_map_boundary(&self, point: &Point) -> bool {
         let vertical_max = self.points.len() - 1;
-        let horizontal_max = self.points.first().map(|x| x.len()).unwrap_or(0);
+        let horizontal_max = self.points.first().map(|x| x.len() -1).unwrap_or(0);
 
         point.0 < 1 ||
             point.0 >= horizontal_max ||
@@ -147,30 +152,85 @@ impl FromStr for Puzzle {
 }
 
 impl Puzzle {
-    pub fn distinct_positions_visited(&mut self) -> u32 {
-        let mut points_visited = vec![self.guard.point.clone()];
+    pub fn distinct_positions_visited(&mut self) -> usize {
+        let mut points_visited = HashSet::new();
+        points_visited.insert(self.guard.point.clone());
         loop{
-            if let Some(new_point) = self.guard.walk_or_turn(&self.map) {
-                if self.map.at_map_boundary(&new_point) {
-                    points_visited.push(new_point);
+            match self.guard.try_walk(&self.map) {
+                WalkResult::WalkedTo(point) => {
+                    if self.map.at_map_boundary(&point) {
+                        points_visited.insert(point);
 
-                    break;
+                        break;
+                    }
+
+                    points_visited.insert(point);
                 }
-
-                points_visited.push(new_point);
+                WalkResult::ObstructedAt(_) => {
+                    self.guard.turn();
+                }
             }
         }
 
-        points_visited.iter().unique().count() as u32
+        points_visited.iter().count()
     }
 
-    pub fn part_2(&self) -> u32 {
-        1
+    pub fn potential_loop_opportunities(&mut self) -> u32 {
+        let mut loop_opportunities = 0;
+
+        let mut points_visited = HashSet::new();
+        let mut obstructions_encountered : Vec<(Point, Direction)> = Vec::new();
+        points_visited.insert((self.guard.point.clone(), self.guard.direction.clone()));
+        loop{
+            match self.guard.try_walk(&self.map) {
+                WalkResult::WalkedTo(point) => {
+                    let rotated = self.guard.direction.rotate();
+                    if let Some(next_obstruction_if_rotated) = self.next_obstruction(&point, &rotated) {
+                        if obstructions_encountered.iter()
+                            .any(|x| x.0 == next_obstruction_if_rotated && x.1 == rotated) {
+                            loop_opportunities += 1;
+                        }
+                    }
+
+                    if self.map.at_map_boundary(&point) {
+                        points_visited.insert((point.clone(), self.guard.direction.clone()));
+
+                        break;
+                    }
+
+                    points_visited.insert((point.clone(), self.guard.direction.clone()));
+
+                }
+                WalkResult::ObstructedAt(point) => {
+                    obstructions_encountered.push((point, self.guard.direction.clone()));
+                    self.guard.turn();
+                }
+            }
+        }
+
+        loop_opportunities
+    }
+
+    pub fn next_obstruction(&self, current: &Point, direction: &Direction) -> Option<Point> {
+        if let Some(point) = current.gen_point_for_direction(&direction) {
+            if self.map.point_is_obstructed(&point){
+                return Some(point);
+            }
+
+            if self.map.at_map_boundary(&point){
+                return None;
+            }
+
+            return self.next_obstruction(&point, direction);
+        }
+
+        None
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use super::*;
     const INPUT: &str = "....#.....
 .........#
@@ -198,13 +258,12 @@ mod tests {
     #[test]
     fn should_solve_part_2() {
         // Given
-        let puzzle = Puzzle::from_str(INPUT).unwrap();
-        dbg!(&puzzle);
+        let mut puzzle = Puzzle::from_str(INPUT).unwrap();
 
         // When
-        let sum = puzzle.part_2();
+        let sum = puzzle.potential_loop_opportunities();
 
         // Then
-        assert_eq!(1, sum);
+        assert_eq!(6, sum);
     }
 }
