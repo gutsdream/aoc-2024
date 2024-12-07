@@ -1,16 +1,16 @@
-use std::str::FromStr;
 use crate::Operator::{Add, Concatenate, Multiply};
+use std::str::FromStr;
 
 #[derive(Debug, Clone)]
-enum Operator{
+enum Operator {
     Add,
     Multiply,
-    Concatenate
+    Concatenate,
 }
 
-impl Operator{
+impl Operator {
     fn apply(&self, a: u64, b: u64) -> u64 {
-        match self{
+        match self {
             Add => a + b,
             Multiply => a * b,
             Concatenate => {
@@ -29,13 +29,13 @@ struct UnoperatedEquation {
 }
 
 #[derive(Debug, Clone)]
-struct Operation{
+struct Operation {
     a: u64,
     b: u64,
-    operator: Operator
+    operator: Operator,
 }
 
-trait Calculate{
+trait Calculate {
     fn calculate(&self) -> u64;
 }
 
@@ -55,39 +55,58 @@ impl UnoperatedEquation {
         Some(UnoperatedEquation { result, inputs })
     }
 
-    fn has_successful_variation(&self, operators: &Vec<Operator>) -> bool{
-        let pair_variations = self.inputs.windows(2)
-            .map(|window| operators.clone().into_iter()
-                .map(|op| Operation{
-                    a: window[0],
-                    b : window[1],
-                    operator: op
-                })
-                .collect::<Vec<_>>())
+    fn has_successful_variation(&self, operators: &Vec<Operator>) -> bool {
+        let pair_variations = self
+            .inputs
+            .windows(2)
+            .map(|window| {
+                operators
+                    .clone()
+                    .into_iter()
+                    .map(|op| Operation {
+                        a: window[0],
+                        b: window[1],
+                        operator: op,
+                    })
+                    .collect::<Vec<_>>()
+            })
             .collect::<Vec<_>>();
 
         let potential_equations = Self::gen_potential_equations(pair_variations);
 
-        let results = potential_equations.iter().map(|x| x.calculate()).collect::<Vec<_>>();
+        let results = potential_equations
+            .iter()
+            .map(|x| x.calculate())
+            .collect::<Vec<_>>();
 
         results.iter().any(|x| x == &self.result)
     }
 
     fn gen_potential_equations(pair_variations: Vec<Vec<Operation>>) -> Vec<Vec<Operation>> {
-        let initial : Vec<Vec<Operation>> = pair_variations[0].clone().into_iter()
+        let initial: Vec<Vec<Operation>> = pair_variations[0]
+            .clone()
+            .into_iter()
             .map(|x| vec![x])
             .collect();
 
-        pair_variations.into_iter().skip(1).fold(initial, |acc, pair| {
-            pair.iter()
-                .enumerate()
-                .map(|(i, x)| acc.clone().into_iter().map(|mut x| {
-                    x.push(pair[i].clone());
-                    x
-                }).collect::<Vec<Vec<Operation>>>())
-                .flatten()
-                .collect()
-        })
+        pair_variations
+            .into_iter()
+            .skip(1)
+            .fold(initial, |acc, pair| {
+                pair.iter()
+                    .enumerate()
+                    .map(|(i, x)| {
+                        acc.clone()
+                            .into_iter()
+                            .map(|mut x| {
+                                x.push(pair[i].clone());
+                                x
+                            })
+                            .collect::<Vec<Vec<Operation>>>()
+                    })
+                    .flatten()
+                    .collect()
+            })
     }
 }
 
@@ -101,10 +120,11 @@ impl FromStr for Puzzle {
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let equations = input
             .lines()
-            .map(|x| x.split([':', ' '])
-                .filter_map(|x| x.parse::<u64>().ok())
-                .collect()
-            )
+            .map(|x| {
+                x.split([':', ' '])
+                    .filter_map(|x| x.parse::<u64>().ok())
+                    .collect()
+            })
             .filter_map(|x| UnoperatedEquation::new(x))
             .collect::<Vec<_>>();
 
@@ -114,15 +134,19 @@ impl FromStr for Puzzle {
 
 impl Puzzle {
     pub fn part_1(&self) -> u64 {
-        self.equations.iter()
+        self.equations
+            .iter()
             .filter(|x| x.has_successful_variation(&vec![Add, Multiply]))
-            .map(|x| x.result).sum()
+            .map(|x| x.result)
+            .sum()
     }
 
     pub fn part_2(&self) -> u64 {
-        self.equations.iter()
+        self.equations
+            .iter()
             .filter(|x| x.has_successful_variation(&vec![Add, Multiply, Concatenate]))
-            .map(|x| x.result).sum()
+            .map(|x| x.result)
+            .sum()
     }
 }
 
