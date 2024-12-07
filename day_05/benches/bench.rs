@@ -15,7 +15,6 @@ fn part1() {
     Puzzle::from(input.as_str()).sum_of_correct_updates();
 }
 
-// TODO: investigate rayon for perf improvements
 #[divan::bench]
 fn part2() {
     let input = divan::black_box(fs::read_to_string("./input.txt").unwrap());
