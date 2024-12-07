@@ -1,5 +1,4 @@
 use day_06::Puzzle;
-use divan::AllocProfiler;
 use std::fs;
 use std::str::FromStr;
 
