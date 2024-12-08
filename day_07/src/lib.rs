@@ -1,117 +1,84 @@
-use crate::Operator::{Add, Concatenate, Multiply};
+use crate::Operator::{Divide, IsConcatenable, Subtract};
+use rayon::prelude::*;
+use std::iter::once;
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 enum Operator {
-    Add,
-    Multiply,
-    Concatenate,
+    Subtract,
+    Divide,
+    IsConcatenable,
 }
 
 impl Operator {
-    fn apply(&self, a: u64, b: u64) -> u64 {
+    fn apply(&self, a: &i64, b: &i64) -> Option<i64> {
         match self {
-            Add => a + b,
-            Multiply => a * b,
-            Concatenate => {
+            Subtract => Some(a - b),
+            Divide => match a % b == 0 {
+                true => Some(a / b),
+                false => None,
+            },
+            IsConcatenable => {
                 let length_b = b.checked_ilog10().unwrap_or(0) + 1;
-                let a_raised = a * 10_u64.pow(length_b);
-                a_raised + b
+                let b_divisor = 10_i64.pow(length_b);
+                let a_without_b = a - b;
+                Divide.apply(&a_without_b, &b_divisor)
             }
         }
     }
 }
 
 #[derive(Debug)]
-struct UnoperatedEquation {
-    result: u64,
-    inputs: Vec<u64>,
+struct ReversedEquation {
+    inputs: Vec<i64>,
 }
 
-#[derive(Debug, Clone)]
-struct Operation {
-    a: u64,
-    b: u64,
-    operator: Operator,
-}
-
-trait Calculate {
-    fn calculate(&self) -> u64;
-}
-
-impl Calculate for Vec<Operation> {
-    fn calculate(&self) -> u64 {
-        let first = self[0].a;
-        self.iter().fold(first, |acc, x| x.operator.apply(acc, x.b))
-    }
-}
-
-impl UnoperatedEquation {
-    fn new(all_inputs: Vec<u64>) -> Option<UnoperatedEquation> {
+impl ReversedEquation {
+    fn new(all_inputs: Vec<i64>) -> Option<ReversedEquation> {
         let mut iter = all_inputs.into_iter();
         let result = iter.next()?;
-        let inputs = iter.collect();
+        let inputs = iter.chain(once(result)).rev().collect::<Vec<_>>();
 
-        Some(UnoperatedEquation { result, inputs })
+        Some(ReversedEquation { inputs })
     }
 
-    fn has_successful_variation(&self, operators: &Vec<Operator>) -> bool {
-        let pair_variations = self
-            .inputs
-            .windows(2)
-            .map(|window| {
-                operators
-                    .clone()
-                    .into_iter()
-                    .map(|op| Operation {
-                        a: window[0],
-                        b: window[1],
-                        operator: op,
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
+    fn has_successful_variation(&self, applicable_operators: &Vec<Operator>) -> bool {
+        if let Some(initial) = self.inputs.get(0) {
+            return applicable_operators
+                .iter()
+                .any(|x| self.any_valid_calculation_routes(initial.clone(), 1, x, applicable_operators));
+        }
 
-        let potential_equations = Self::gen_potential_equations(pair_variations);
-
-        let results = potential_equations
-            .iter()
-            .map(|x| x.calculate())
-            .collect::<Vec<_>>();
-
-        results.iter().any(|x| x == &self.result)
+        false
     }
 
-    fn gen_potential_equations(pair_variations: Vec<Vec<Operation>>) -> Vec<Vec<Operation>> {
-        let initial: Vec<Vec<Operation>> = pair_variations[0]
-            .clone()
-            .into_iter()
-            .map(|x| vec![x])
-            .collect();
+    fn any_valid_calculation_routes(
+        &self,
+        acc: i64,
+        index: usize,
+        operator: &Operator,
+        applicable_operators: &Vec<Operator>,
+    ) -> bool {
+        if let Some(next) = self.inputs.get(index) {
+            return match operator.apply(&acc, &next) {
+                None => false,
+                Some(result) => {
+                    match result == 0 {
+                        true => true,
+                        false => applicable_operators
+                            .iter()
+                            .any(|x| self.any_valid_calculation_routes(result, index + 1, x, applicable_operators)),
+                    }
+                }
+            }
+        }
 
-        pair_variations
-            .into_iter()
-            .skip(1)
-            .fold(initial, |acc, pair| {
-                pair.iter()
-                    .enumerate()
-                    .map(|(i, _)| {
-                        acc.clone()
-                            .into_iter()
-                            .map(|mut x| {
-                                x.push(pair[i].clone());
-                                x
-                            })
-                            .collect::<Vec<Vec<Operation>>>()
-                    })
-                    .flatten()
-                    .collect()
-            })
+        false
     }
 }
 
 pub struct Puzzle {
-    equations: Vec<UnoperatedEquation>,
+    equations: Vec<ReversedEquation>,
 }
 
 impl FromStr for Puzzle {
@@ -122,10 +89,10 @@ impl FromStr for Puzzle {
             .lines()
             .map(|x| {
                 x.split([':', ' '])
-                    .filter_map(|x| x.parse::<u64>().ok())
+                    .filter_map(|x| x.parse::<i64>().ok())
                     .collect()
             })
-            .filter_map(|x| UnoperatedEquation::new(x))
+            .filter_map(|x| ReversedEquation::new(x))
             .collect::<Vec<_>>();
 
         Ok(Puzzle { equations })
@@ -133,19 +100,19 @@ impl FromStr for Puzzle {
 }
 
 impl Puzzle {
-    pub fn part_1(&self) -> u64 {
+    pub fn part_1(&self) -> i64 {
         self.equations
-            .iter()
-            .filter(|x| x.has_successful_variation(&vec![Add, Multiply]))
-            .map(|x| x.result)
+            .par_iter()
+            .filter(|x| x.has_successful_variation(&vec![Subtract, Divide]))
+            .map(|x| x.inputs[0])
             .sum()
     }
 
-    pub fn part_2(&self) -> u64 {
+    pub fn part_2(&self) -> i64 {
         self.equations
-            .iter()
-            .filter(|x| x.has_successful_variation(&vec![Add, Multiply, Concatenate]))
-            .map(|x| x.result)
+            .par_iter()
+            .filter(|x| x.has_successful_variation(&vec![Subtract, Divide, IsConcatenable]))
+            .map(|x| x.inputs[0])
             .sum()
     }
 }
