@@ -44,9 +44,9 @@ impl ReversedEquation {
 
     fn has_successful_variation(&self, applicable_operators: &Vec<Operator>) -> bool {
         if let Some(initial) = self.inputs.get(0) {
-            return applicable_operators
-                .iter()
-                .any(|x| self.any_valid_calculation_routes(initial.clone(), 1, x, applicable_operators));
+            return applicable_operators.iter().any(|x| {
+                self.any_valid_calculation_routes(initial.clone(), 1, x, applicable_operators)
+            });
         }
 
         false
@@ -62,15 +62,18 @@ impl ReversedEquation {
         if let Some(next) = self.inputs.get(index) {
             return match operator.apply(&acc, &next) {
                 None => false,
-                Some(result) => {
-                    match result == 0 {
-                        true => true,
-                        false => applicable_operators
-                            .iter()
-                            .any(|x| self.any_valid_calculation_routes(result, index + 1, x, applicable_operators)),
-                    }
-                }
-            }
+                Some(result) => match result == 0 {
+                    true => true,
+                    false => applicable_operators.iter().any(|x| {
+                        self.any_valid_calculation_routes(
+                            result,
+                            index + 1,
+                            x,
+                            applicable_operators,
+                        )
+                    }),
+                },
+            };
         }
 
         false
