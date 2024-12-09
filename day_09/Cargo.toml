@@ -1,0 +1,13 @@
+[package]
+name = "day_09"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+divan = "0.1.16"
+eyre = "0.6.12"
+
+[[bench]]
+name = "day-09-bench"
+path = "benches/bench.rs"
+harness = false
