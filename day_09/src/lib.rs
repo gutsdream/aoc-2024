@@ -59,8 +59,6 @@ impl Puzzle {
     pub fn part_2(&self) -> u64 {
         let ordered_disk_items = self.order_disk_items();
 
-        dbg!(&ordered_disk_items);
-
         let fragments = Self::fragment(&ordered_disk_items);
 
         Self::checksum(&fragments)
@@ -101,21 +99,22 @@ impl Puzzle {
     }
 
     fn order_disk_items(&self) -> Vec<DiskItem> {
-        dbg!(&self.disk_items);
         let mut ordered_disk_items: Vec<DiskItem> = self.disk_items.clone();
 
-        dbg!("Hello");
         _ = self
             .disk_items
             .iter()
-            .enumerate()
             .rev()
-            .filter_map(|(i, x)| match x {
-                File { size, file_id } => Some((i, size, file_id)),
+            .filter_map(|x| match x {
+                File { size, file_id } => Some( (size, file_id) ),
                 Space { size } => None,
             })
-            .for_each(|(file_index, file_size, file_id)| {
-                dbg!(&file_id);
+            .for_each(|(file_size, id)| {
+                let (file_index, _)=  ordered_disk_items.iter().enumerate().find(|(_,x)| match x{
+                    File { file_id, .. } => {id.value == file_id.value},
+                    Space { .. } => {false}
+                }).unwrap();
+
                 if let Some((space_index, space_size)) = ordered_disk_items
                     .clone()
                     .iter()
@@ -132,26 +131,24 @@ impl Puzzle {
                     })
                     .next()
                 {
-                    dbg!("Swapping");
-
                     match space_size > file_size{
                         true => {
-                            dbg!("Complex swap", &file_id);
+                            let space_left = space_size - file_size;
 
-                            let new_space = Space{size: space_size - file_size };
+                            let space_taken = Space{size: file_size.clone() };
+                            let remaining_space = Space{size: space_left };
+
                             let file = ordered_disk_items.remove(file_index);
-                            let _ = ordered_disk_items.remove(space_index);
+                            ordered_disk_items.insert(file_index, space_taken);
 
+                            let _ = ordered_disk_items.remove(space_index);
                             ordered_disk_items.insert(space_index, file);
-                            ordered_disk_items.insert(space_index + 1, new_space);
+                            ordered_disk_items.insert(space_index + 1, remaining_space);
                         }
                         false => {
-                            dbg!("ez swap", &file_id);
-
                             ordered_disk_items.swap(space_index, file_index);
                         }
                     }
-
                 }
             });
 
