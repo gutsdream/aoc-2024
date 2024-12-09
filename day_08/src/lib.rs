@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -32,16 +32,16 @@ impl PointGenerator {
         match self.antinode(a, b).is_some() {
             true => {
                 let mut antinodes: Vec<Point> = vec![a.clone(), b.clone()];
-                self.antinodes_till_inner(a, b, &mut antinodes);
+                self.generate_antinodes_in_bounds(a, b, &mut antinodes);
                 antinodes
             }
             false => Vec::new(),
         }
     }
 
-    fn antinodes_till_inner(&self, a: &Point, b: &Point, antinodes: &mut Vec<Point>) {
+    fn generate_antinodes_in_bounds(&self, a: &Point, b: &Point, antinodes: &mut Vec<Point>) {
         if let Some(c) = self.antinode(a, b) {
-            self.antinodes_till_inner(b, &c, antinodes);
+            self.generate_antinodes_in_bounds(b, &c, antinodes);
             antinodes.push(c);
         }
     }
