@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 divan = "0.1.16"
 eyre = "0.6.12"
+itertools = "0.13.0"
 
 [[bench]]
 name = "day-09-bench"

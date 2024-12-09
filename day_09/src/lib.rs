@@ -1,174 +1,232 @@
 use crate::DiskFragment::{FileFragment, SpaceFragment};
-use crate::DiskItem::{File, Space};
+use itertools::Either::{Left, Right};
+use itertools::Itertools;
 use std::iter::repeat;
 use std::str::FromStr;
 
-#[derive(Debug, Copy, Clone)]
-pub struct FileId {
+#[derive(Debug, Clone)]
+struct FileId {
     value: usize,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 enum DiskFragment {
     FileFragment(FileId),
     SpaceFragment,
 }
 
-#[derive(Debug, Copy, Clone)]
-enum DiskItem {
-    File { file_id: FileId, size: usize },
-    Space { size: usize },
+#[derive(Debug, Clone)]
+struct File {
+    file_id: FileId,
+    size: usize,
+}
+
+#[derive(Debug, Clone)]
+struct DiskSpace {
+    files: Vec<File>,
+    capacity: usize,
+}
+
+impl DiskSpace {
+    fn fragments(&self) -> Vec<DiskFragment> {
+        let mut fragments = self.files.iter().map(|x| x.fragments()).collect::<Vec<_>>();
+        let space_fragments = repeat(self.capacity)
+            .take(self.capacity)
+            .map(|_| SpaceFragment)
+            .collect::<Vec<_>>();
+
+        fragments.push(space_fragments);
+
+        fragments.into_iter().flatten().collect()
+    }
+
+    fn new(size: usize) -> DiskSpace {
+        DiskSpace {
+            capacity: size,
+            files: Vec::new(),
+        }
+    }
+
+    fn transfer(&mut self, other: &mut DiskSpace, file_id: &FileId, size: usize) {
+        self.capacity -= size;
+        self.files.push(other.drain(&file_id, size));
+    }
+
+    fn drain(&mut self, file_id: &FileId, size: usize) -> File {
+        self.capacity += size;
+        let file = self
+            .files
+            .iter_mut()
+            .next()
+            .unwrap();
+
+        let new_size = file.size - size;
+        file.size = new_size;
+
+        File {
+            file_id: file_id.clone(),
+            size,
+        }
+    }
+}
+
+impl File {
+    fn chunk(&mut self, size: usize) -> File {
+        let new_size = self.size - size;
+
+        self.size = new_size;
+
+        File {
+            file_id: self.file_id.clone(),
+            size,
+        }
+    }
+
+    fn fragments(&self) -> Vec<DiskFragment> {
+        repeat(self.size)
+            .take(self.size)
+            .map(|_| FileFragment(self.file_id.clone()))
+            .collect::<Vec<_>>()
+    }
 }
 
 pub struct Puzzle {
-    disk_items: Vec<DiskItem>,
+    disk_space: Vec<DiskSpace>,
 }
 
 impl FromStr for Puzzle {
     type Err = ();
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let mut disk_map: Vec<DiskItem> = input
+        let mut disk_map: Vec<DiskSpace> = input
             .chars()
             .enumerate()
             .filter_map(|(i, x)| {
                 let x: usize = x.to_digit(10)? as usize;
                 match i % 2 == 0 {
-                    true => Some(File {
-                        file_id: FileId { value: i / 2 },
-                        size: x,
+                    true => Some(DiskSpace {
+                        files: vec![File {
+                            file_id: FileId { value: i / 2 },
+                            size: x,
+                        }],
+                        capacity: 0,
                     }),
-                    false => Some(Space { size: x }),
+                    false => Some(DiskSpace {
+                        files: vec![],
+                        capacity: x,
+                    }),
                 }
             })
             .collect();
 
         Ok(Puzzle {
-            disk_items: disk_map,
+            disk_space: disk_map,
         })
     }
 }
 
 impl Puzzle {
     pub fn part_1(&self) -> u64 {
-        let ordered_disk_fragments = self.order_disk_fragments();
+        let fragmented_disk_space = Self::fragment(&self.disk_space);
+        let ordered_fragments = self.order_fragments(fragmented_disk_space);
 
-        Self::checksum(&ordered_disk_fragments)
+        Self::checksum(&ordered_fragments)
     }
 
     pub fn part_2(&self) -> u64 {
-        let ordered_disk_items = self.order_disk_items();
+        let ordered_disk_items = self.order_preserved();
 
         let fragments = Self::fragment(&ordered_disk_items);
 
         Self::checksum(&fragments)
     }
 
-    fn order_disk_fragments(&self) -> Vec<DiskFragment> {
-        let fragment_disk_map: Vec<DiskFragment> = Self::fragment(&self.disk_items);
-
-        let mut ordered_disk_map: Vec<DiskFragment> = fragment_disk_map.clone();
-        let mut file_id_iter = fragment_disk_map
-            .iter()
+    fn order_fragments(&self, fragments: Vec<DiskFragment>) -> Vec<DiskFragment> {
+        let mut ordered_fragments = fragments.clone();
+        let (files, space_indexes): (Vec<(usize, FileId)>, Vec<(usize)>) = fragments
+            .into_iter()
             .enumerate()
-            .filter(|(_, x)| match x {
-                FileFragment(_) => true,
-                SpaceFragment => false,
-            })
-            .rev();
-
-        _ = fragment_disk_map
-            .iter()
-            .enumerate()
-            .filter(|(_, x)| match x {
-                FileFragment(_) => false,
-                SpaceFragment => true,
-            })
-            .try_for_each(|(space_index, _)| match file_id_iter.next() {
-                Some((file_index, _)) => match space_index < file_index {
-                    true => {
-                        ordered_disk_map.swap(space_index, file_index);
-                        Ok(())
-                    }
-                    false => Err(()),
-                },
-                _ => Err(()),
+            .partition_map(|(i, x)| match x {
+                FileFragment(file) => Left((i, file)),
+                SpaceFragment => Right(i),
             });
 
-        ordered_disk_map
-    }
+        let mut space_indexes_iter = space_indexes.into_iter();
 
-    fn order_disk_items(&self) -> Vec<DiskItem> {
-        let mut ordered_disk_items: Vec<DiskItem> = self.disk_items.clone();
-
-        _ = self
-            .disk_items
-            .iter()
+        _ = files
+            .into_iter()
             .rev()
-            .filter_map(|x| match x {
-                File { size, file_id } => Some( (size, file_id) ),
-                Space { size } => None,
-            })
-            .for_each(|(file_size, id)| {
-                let (file_index, _)=  ordered_disk_items.iter().enumerate().find(|(_,x)| match x{
-                    File { file_id, .. } => {id.value == file_id.value},
-                    Space { .. } => {false}
-                }).unwrap();
-
-                if let Some((space_index, space_size)) = ordered_disk_items
-                    .clone()
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(space_index, x)| match space_index < file_index {
-                        true => {match x {
-                            File { .. } => None,
-                            Space { size, .. } => match size >= file_size {
-                                true => {Some((space_index, size))}
-                                false => {None}
-                            },
-                        }}
-                        false => {None}
-                    })
-                    .next()
-                {
-                    match space_size > file_size{
+            .try_for_each(|(file_index, file_id)| {
+                if let Some(space_index) = space_indexes_iter.next() {
+                    return match space_index < file_index {
                         true => {
-                            let space_left = space_size - file_size;
-
-                            let space_taken = Space{size: file_size.clone() };
-                            let remaining_space = Space{size: space_left };
-
-                            let file = ordered_disk_items.remove(file_index);
-                            ordered_disk_items.insert(file_index, space_taken);
-
-                            let _ = ordered_disk_items.remove(space_index);
-                            ordered_disk_items.insert(space_index, file);
-                            ordered_disk_items.insert(space_index + 1, remaining_space);
+                            ordered_fragments.swap(space_index, file_index);
+                            Ok(())
                         }
-                        false => {
-                            ordered_disk_items.swap(space_index, file_index);
-                        }
+                        false => Err(()),
                     }
                 }
+
+                Err(())
             });
 
-        ordered_disk_items
+        ordered_fragments
     }
 
-    fn fragment(disk_items : &Vec<DiskItem>) -> Vec<DiskFragment> {
+    fn order_preserved(&self) -> Vec<DiskSpace> {
+        let (mut files, mut spaces): (Vec<(usize, DiskSpace)>, Vec<(usize, DiskSpace)>) = self
+            .partition_disk_space();
+
+        files.iter_mut().rev().for_each(|(file_index, file_space)| {
+            let file = { file_space.files.iter_mut().next().unwrap().clone() };
+            if let Some(target_space) = spaces
+                .iter_mut()
+                .filter_map(|(i, space)| match i < file_index {
+                    true => match space.capacity >= file.size {
+                        true => Some(space),
+                        false => None,
+                    },
+                    false => None,
+                })
+                .next()
+            {
+                target_space.transfer(file_space, &file.file_id, file.size)
+            }
+        });
+
+        Self::join_disk_space(files, spaces)
+    }
+
+    fn partition_disk_space(&self) -> (Vec<(usize, DiskSpace)>, Vec<(usize, DiskSpace)>) {
+        self.disk_space
+            .clone()
+            .into_iter()
+            .enumerate()
+            .partition_map(|(i, x)| match x.files.len() > 0 {
+                true => Left((i, x)),
+                false => Right((i, x)),
+            })
+    }
+
+    fn join_disk_space(
+        files: Vec<(usize, DiskSpace)>,
+        spaces: Vec<(usize, DiskSpace)>,
+    ) -> Vec<DiskSpace> {
+        let mut ordered: Vec<(usize, DiskSpace)> = vec![files, spaces]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        ordered.sort_by(|(a_index, _), (b_index, _)| a_index.cmp(&b_index));
+
+        ordered.into_iter().map(|(_, item)| item).collect()
+    }
+
+    fn fragment(disk_items: &Vec<DiskSpace>) -> Vec<DiskFragment> {
         disk_items
             .clone()
             .into_iter()
-            .map(|x| match x {
-                File { file_id, size } => repeat(size)
-                    .take(size)
-                    .map(|_| FileFragment(file_id))
-                    .collect::<Vec<_>>(),
-                Space { size } => repeat(size)
-                    .take(size)
-                    .map(|_| SpaceFragment)
-                    .collect::<Vec<_>>(),
-            })
+            .map(|x| x.fragments())
             .flatten()
             .collect()
     }
