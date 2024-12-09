@@ -1,6 +1,5 @@
 use std::fs;
 use std::str::FromStr;
-use divan::AllocProfiler;
 use day_09::Puzzle;
 
 fn main() {

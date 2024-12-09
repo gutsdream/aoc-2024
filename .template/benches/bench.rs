@@ -1,5 +1,4 @@
 use std::fs;
-use divan::AllocProfiler;
 
 fn main() {
     // Run registered benchmarks.
