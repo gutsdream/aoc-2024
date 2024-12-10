@@ -28,19 +28,7 @@ impl FromStr for Puzzle {
 
 impl Puzzle {
     pub fn part_1(&self) -> u32 {
-        let starting_positions = self.map.iter()
-            .enumerate()
-            .map(|(y, row)| row.iter()
-                .enumerate()
-                .filter_map(|(x, height)| match height == &0 {
-                    true => {Some(MapPosition{
-                        point: Point { x, y },
-                        height: height.clone()
-                    })}
-                    false => {None}
-                }).collect::<Vec<_>>())
-            .flatten()
-            .collect::<Vec<_>>();
+        let starting_positions = self.get_starting_positions();
 
         starting_positions
             .iter()
@@ -49,8 +37,32 @@ impl Puzzle {
     }
 
     pub fn part_2(&self) -> u32 {
-        1
+        let starting_positions = self.get_starting_positions();
+
+        starting_positions
+            .iter()
+            .map(|position| self.map.get_trailhead_rating(position.clone()))
+            .sum()
     }
+
+    fn get_starting_positions(&self) -> Vec<MapPosition> {
+        self.map.iter()
+            .enumerate()
+            .map(|(y, row)| row.iter()
+                .enumerate()
+                .filter_map(|(x, height)| match height == &0 {
+                    true => {
+                        Some(MapPosition {
+                            point: Point { x, y },
+                            height: height.clone()
+                        })
+                    }
+                    false => { None }
+                }).collect::<Vec<_>>())
+            .flatten()
+            .collect::<Vec<_>>()
+    }
+
 }
 
 #[cfg(test)]
@@ -91,6 +103,6 @@ mod tests {
         let sum = puzzle.part_2();
 
         // Then
-        assert_eq!(1, sum);
+        assert_eq!(81, sum);
     }
 }

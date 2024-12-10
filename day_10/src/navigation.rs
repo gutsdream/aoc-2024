@@ -8,6 +8,7 @@ const END: usize = 9;
 
 pub trait Navigate {
     fn get_trailhead_score(&self, position: MapPosition) -> u32;
+    fn get_trailhead_rating(&self, position: MapPosition) -> u32;
     fn get_next_trail_steps(&self, position: &MapPosition) -> Vec<MapPosition>;
     fn at_point(&self, point: Point) -> Option<MapPosition>;
 }
@@ -22,6 +23,17 @@ impl Navigate for Map {
         });
 
         final_positions.iter().unique().count() as u32
+    }
+
+    fn get_trailhead_rating(&self, position: MapPosition) -> u32 {
+        let final_positions = (0..9).fold(vec![position], |positions, _| {
+            positions.iter()
+                .map(|position| self.get_next_trail_steps(position))
+                .flatten()
+                .collect()
+        });
+
+        final_positions.iter().count() as u32
     }
 
     fn get_next_trail_steps(&self, position: &MapPosition) -> Vec<MapPosition> {
