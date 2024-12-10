@@ -175,6 +175,7 @@ dependencies = [
  "divan",
  "eyre",
  "itertools",
+ "rayon",
 ]
 
 [[package]]

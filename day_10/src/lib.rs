@@ -2,6 +2,7 @@ use crate::navigation::{MapPosition, Navigate, Point};
 use direction::Direction;
 use navigation::Map;
 use std::str::FromStr;
+use rayon::prelude::*;
 
 mod direction;
 mod navigation;
@@ -32,7 +33,7 @@ impl Puzzle {
         let starting_positions = self.get_starting_positions();
 
         starting_positions
-            .iter()
+            .par_iter()
             .map(|position| self.map.get_trailhead_score(position.clone()))
             .sum()
     }
@@ -41,7 +42,7 @@ impl Puzzle {
         let starting_positions = self.get_starting_positions();
 
         starting_positions
-            .iter()
+            .par_iter()
             .map(|position| self.map.get_trailhead_rating(position.clone()))
             .sum()
     }
