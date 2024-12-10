@@ -165,6 +165,14 @@ version = "0.1.0"
 dependencies = [
  "divan",
  "eyre",
+]
+
+[[package]]
+name = "day_10"
+version = "0.1.0"
+dependencies = [
+ "divan",
+ "eyre",
  "itertools",
 ]
 
