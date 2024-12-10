@@ -1,10 +1,7 @@
-use itertools::Itertools;
 use crate::direction::{Direction, DIRECTIONS};
+use itertools::Itertools;
 
 pub type Map = Vec<Vec<u32>>;
-
-const START: usize = 0;
-const END: usize = 9;
 
 pub trait Navigate {
     fn get_trailhead_score(&self, position: MapPosition) -> u32;
@@ -16,7 +13,8 @@ pub trait Navigate {
 impl Navigate for Map {
     fn get_trailhead_score(&self, position: MapPosition) -> u32 {
         let final_positions = (0..9).fold(vec![position], |positions, _| {
-            positions.iter()
+            positions
+                .iter()
                 .map(|position| self.get_next_trail_steps(position))
                 .flatten()
                 .collect()
@@ -27,7 +25,8 @@ impl Navigate for Map {
 
     fn get_trailhead_rating(&self, position: MapPosition) -> u32 {
         let final_positions = (0..9).fold(vec![position], |positions, _| {
-            positions.iter()
+            positions
+                .iter()
                 .map(|position| self.get_next_trail_steps(position))
                 .flatten()
                 .collect()
@@ -37,7 +36,8 @@ impl Navigate for Map {
     }
 
     fn get_next_trail_steps(&self, position: &MapPosition) -> Vec<MapPosition> {
-        DIRECTIONS.iter()
+        DIRECTIONS
+            .iter()
             .filter_map(|direction| position.point.gen_in_direction(direction))
             .filter_map(|point| self.at_point(point))
             .filter(|next_position| next_position.height.checked_sub(position.height) == Some(1))
@@ -47,7 +47,12 @@ impl Navigate for Map {
     fn at_point(&self, point: Point) -> Option<MapPosition> {
         self.get(point.y)
             .and_then(|row| row.get(point.x))
-            .and_then(|height| Some(MapPosition{ point, height: height.clone() }))
+            .and_then(|height| {
+                Some(MapPosition {
+                    point,
+                    height: height.clone(),
+                })
+            })
     }
 }
 

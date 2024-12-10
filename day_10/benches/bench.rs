@@ -1,6 +1,6 @@
+use day_10::Puzzle;
 use std::fs;
 use std::str::FromStr;
-use day_10::Puzzle;
 
 fn main() {
     // Run registered benchmarks.
