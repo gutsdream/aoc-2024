@@ -1,12 +1,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-#[derive(Debug, Clone)]
-enum BlinkedStone {
-    Whole(u64),
-    Split(u64, u64),
-}
-
 impl FromStr for Puzzle {
     type Err = ();
 
@@ -43,26 +37,29 @@ impl Puzzle {
             cache
                 .iter()
                 .for_each(|(stone, count)| {
-                    let length = stone.checked_ilog10().unwrap_or(0) + 1;
-
-                    if length % 2 == 0 {
-                        let half_length = 10_u64.pow(length / 2);
-
-                        *cache_iteration.entry(stone / half_length).or_insert(0) += count;
-                        *cache_iteration.entry(stone % half_length).or_insert(0) += count
-                    }
-                    else{
-                        match stone == &0{
-                            true => {*cache_iteration.entry(1).or_insert(0) += count}
-                            false => {*cache_iteration.entry(stone * 2024).or_insert(0) += count}
-                        }
-                    }
+                    Self::blink(&mut cache_iteration, stone, count);
                 });
 
             cache = cache_iteration;
         });
 
         cache.values().sum()
+    }
+
+    fn blink(cache_iteration: &mut HashMap<u64, u64>, stone: &u64, count: &u64) {
+        let length = stone.checked_ilog10().unwrap_or(0) + 1;
+
+        if length % 2 == 0 {
+            let half_length = 10_u64.pow(length / 2);
+
+            *cache_iteration.entry(stone / half_length).or_insert(0) += count;
+            *cache_iteration.entry(stone % half_length).or_insert(0) += count
+        } else {
+            match stone == &0 {
+                true => { *cache_iteration.entry(1).or_insert(0) += count }
+                false => { *cache_iteration.entry(stone * 2024).or_insert(0) += count }
+            }
+        }
     }
 }
 
