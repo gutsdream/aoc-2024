@@ -1,15 +1,13 @@
 [package]
-name = "day_11"
+name = "day_template"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dashu = "0.4.2"
 divan = "0.1.16"
 eyre = "0.6.12"
-num-bigint = "0.4.6"
 
 [[bench]]
-name = "day-11-bench"
+name = "day-template-bench"
 path = "benches/bench.rs"
 harness = false

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
+use dashu::{ubig, Natural};
 
 impl FromStr for Puzzle {
     type Err = ();
@@ -16,23 +17,25 @@ pub struct Puzzle {
 }
 
 impl Puzzle {
-    pub fn part_1(&self) -> u64 {
+    pub fn part_1(&self) -> Natural {
         self.count_for_blinks(25)
     }
 
-    pub fn part_2(&self) -> u64 {
-        self.count_for_blinks(75)
+    pub fn part_2(&self) -> Natural {
+        self.count_for_blinks(68000)
     }
 
-    fn count_for_blinks(&self, depth: u8) -> u64 {
-        let mut cache: HashMap<u64, u64> = HashMap::new();
+    fn count_for_blinks(&self, depth: u32) -> Natural {
+        let mut cache: HashMap<u64, Natural> = HashMap::new();
         self.stones
             .clone()
             .into_iter()
-            .for_each(|x| {*cache.entry(x).or_insert(0) += 1});
+            .for_each(|x| {*cache.entry(x).or_insert(ubig!(0)) += ubig!(1)});
 
         (0..depth).for_each(|current_depth| {
-            let mut cache_iteration : HashMap<u64, u64>= HashMap::new();
+            println!("current_depth: {}", current_depth);
+
+            let mut cache_iteration : HashMap<u64, Natural>= HashMap::new();
 
             cache
                 .iter()
@@ -46,18 +49,18 @@ impl Puzzle {
         cache.values().sum()
     }
 
-    fn blink(cache_iteration: &mut HashMap<u64, u64>, stone: &u64, count: &u64) {
+    fn blink(cache_iteration: &mut HashMap<u64, Natural>, stone: &u64, count: &Natural) {
         let length = stone.checked_ilog10().unwrap_or(0) + 1;
 
         if length % 2 == 0 {
             let half_length = 10_u64.pow(length / 2);
 
-            *cache_iteration.entry(stone / half_length).or_insert(0) += count;
-            *cache_iteration.entry(stone % half_length).or_insert(0) += count
+            *cache_iteration.entry(stone / half_length).or_insert(ubig!(0)) += count;
+            *cache_iteration.entry(stone % half_length).or_insert(ubig!(0)) += count
         } else {
             match stone == &0 {
-                true => { *cache_iteration.entry(1).or_insert(0) += count }
-                false => { *cache_iteration.entry(stone * 2024).or_insert(0) += count }
+                true => { *cache_iteration.entry(1).or_insert(ubig!(0)) += count }
+                false => { *cache_iteration.entry(stone * 2024).or_insert(ubig!(0)) += count }
             }
         }
     }
@@ -77,7 +80,7 @@ mod tests {
         let sum = puzzle.part_1();
 
         // Then
-        assert_eq!(55312, sum);
+        assert_eq!(ubig!(55312), sum);
     }
 
     #[test]
@@ -89,6 +92,6 @@ mod tests {
         let sum = puzzle.part_2();
 
         // Then
-        assert_eq!(65601038650482, sum);
+        assert_eq!(ubig!(65601038650482), sum);
     }
 }
