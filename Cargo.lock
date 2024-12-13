@@ -193,7 +193,6 @@ dependencies = [
  "divan",
  "eyre",
  "rayon",
- "regex",
 ]
 
 [[package]]
