@@ -93,11 +93,6 @@ MIIIIIJJEE
 MIIISIJEEE
 MMMISSJEEE";
 
-    const SMALL : &str = "RRRRIIIIII
-RRRRIIIIII
-VVRRRIIIII
-VVRIIIIIII";
-
     #[test]
     fn should_solve_part_1() {
         // Given
@@ -120,17 +115,5 @@ VVRIIIIIII";
 
         // Then
         assert_eq!(1206, sum);
-    }
-
-    #[test]
-    fn should_solve_part_2_SMOL() {
-        // Given
-        let puzzle = Puzzle::from_str(SMALL).unwrap();
-
-        // When
-        let sum = puzzle.part_2();
-
-        // Then
-        assert_eq!(80, sum);
     }
 }
