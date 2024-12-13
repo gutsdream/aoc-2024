@@ -193,6 +193,17 @@ dependencies = [
  "divan",
  "eyre",
  "rayon",
+ "regex",
+]
+
+[[package]]
+name = "day_13"
+version = "0.1.0"
+dependencies = [
+ "divan",
+ "eyre",
+ "itertools",
+ "regex",
 ]
 
 [[package]]
