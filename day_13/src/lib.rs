@@ -1,29 +1,30 @@
+use std::cmp::{max, min};
 use eyre::Context;
 use itertools::{iproduct, Itertools};
 use regex::Regex;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Point {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Button {
     point: Point,
-    cost: i32,
+    cost: i64,
 }
 
 impl Button {
-    fn a(x: i32, y: i32) -> Button {
+    fn a(x: i64, y: i64) -> Button {
         Button {
             point: Point { x, y },
             cost: 3,
         }
     }
 
-    fn b(x: i32, y: i32) -> Button {
+    fn b(x: i64, y: i64) -> Button {
         Button {
             point: Point { x, y },
             cost: 1,
@@ -32,13 +33,13 @@ impl Button {
 
     fn diff(&self, other: &Self) -> Point {
         Point {
-            x: i32::abs(self.point.x - other.point.x),
-            y: i32::abs(self.point.y - other.point.y),
+            x: i64::abs(self.point.x - other.point.x),
+            y: i64::abs(self.point.y - other.point.y),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ClawMachine {
     a: Button,
     b: Button,
@@ -66,7 +67,7 @@ impl FromStr for Puzzle {
                             .map(|x| x.as_str())
                     })
                     .filter_map(|x| x.parse().ok())
-                    .collect::<Vec<i32>>();
+                    .collect::<Vec<i64>>();
 
                 let button_a = Button::a(captures.get(0)?.clone(), captures.get(1)?.clone());
                 let button_b = Button::b(captures.get(2)?.clone(), captures.get(3)?.clone());
@@ -88,7 +89,7 @@ impl FromStr for Puzzle {
 }
 
 impl Puzzle {
-    pub fn part_1(&self) -> u32 {
+    pub fn part_1(&self) -> i64 {
         let kind_of_primes = [
             0, 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73,
             79, 83, 89, 97,
@@ -105,58 +106,180 @@ impl Puzzle {
             (0..101).into_iter()
         ).collect::<Vec<_>>();
 
-        self
-            .machines
+        let increment = 10000000000000_i64;
+        let mut machines = self.machines.clone();
+
+        machines.iter_mut().for_each(|mut machine| {
+            machine.prize.x += increment;
+            machine.prize.y += increment;
+        });
+
+        machines
             .iter()
             .filter_map(|machine| {
-                variations
-                    .iter()
-                    .filter(|x| x != &&(0, 0))
-                    .filter(|(a_count, b_count)| {
-                        machine.a.point.x * a_count + machine.b.point.x * b_count == machine.prize.x &&
-                            machine.a.point.y * a_count + machine.b.point.y * b_count == machine.prize.y
+                dbg!(&machine);
+                let prize_x_by_b = machine.prize.x / machine.b.point.x; // 381
+                let prize_y_by_b = machine.prize.y / machine.b.point.y; // 80
+
+                let ceiling = max(prize_x_by_b as i64, prize_y_by_b as i64);
+
+                let mut zero_to_two_patterns = (0..ceiling)
+                    .rev()
+                    .filter_map(|b_count| {
+                        let prize_without_x = machine.prize.x - b_count as i64 * machine.b.point.x;
+                        let prize_without_y = machine.prize.y - b_count as i64 * machine.b.point.y;
+
+                        match prize_without_x % machine.a.point.x == 0_i64 && prize_without_y % machine.a.point.y == 0_i64 {
+                            true => {
+                                let a_count_x = prize_without_x / machine.a.point.x;
+                                let a_count_y = prize_without_y / machine.a.point.y;
+
+                                // dbg!(&a_count_x, &a_count_y, &b_count, &machine.a.point, &machine.b.point);
+
+                                // match a_count_x == a_count_y {
+                                //     true => {Some((a_count_x, b_count))}
+                                //     false => {None}
+                                // }
+
+                                Some((a_count_x, a_count_y, b_count))
+                            }
+                            false => {None}
+                        }
                     })
-                    .map(|(a_count, b_count)| {
-                        (machine.a.cost * a_count + machine.b.cost * b_count) as u32
-                    }).min()
-                    // .filter_map(|(a_count, b_count)| {
-                    //     Self::get_multiplier_for_combination(machine, a_count, b_count)
-                    //         .and_then(|multiplier| Some(((a_count.clone(), b_count.clone()), multiplier)))
-                    // })
-                    // .filter_map(|((a_count, b_count), multiplier)|{
-                    //     let a_multiplier = a_count * multiplier;
-                    //     let b_multiplier = b_count * multiplier;
-                    //
-                    //     if(a_multiplier > 100 || b_multiplier > 100) {
-                    //         return None;
-                    //     }
-                    //     let a_creds = machine.a.cost * a_count * multiplier;
-                    //     let b_creds = machine.b.cost * b_count * multiplier;
-                    //
-                    //     Some((a_creds + b_creds) as u32)
-                    // }).min()
+                    .take(2);
+
+                match zero_to_two_patterns.next() {
+                    Some(first) => match zero_to_two_patterns.next() {
+                        Some(second) => {
+                            dbg!(first, second);
+                            let mut costs : Vec<i64> = Vec::new();
+                            let a_x_diff = second.0 - first.0;
+                            let a_y_diff = second.1 - first.1;
+                            let b_diff = first.2 - second.2;
+
+
+                            let mut a_x = first.0;
+                            let mut a_y = first.1;
+                            let mut b = first.2;
+
+                            while b >= 0{
+                                // dbg!(&a_x, &a_y, &b);
+
+                                if a_x == a_y{
+                                    // dbg!("hello", &a_x, &b);
+                                    dbg!("Cost");
+
+                                    costs.push(machine.a.cost * a_x + machine.b.cost * b)
+                                }
+
+                                a_x += a_x_diff;
+                                a_y += a_y_diff;
+                                b -= b_diff
+                            }
+
+                            costs.into_iter().min()
+                        }
+                        None => {
+                            match first.0 == first.1 {
+                                true => {
+                                    Some(machine.a.cost * first.0 + machine.b.cost * first.2)
+                                }
+                                false => {None}
+                            }
+                        }
+                    },
+                    None => None,
+                }
             })
             .sum()
-    }
 
-    fn get_multiplier_for_combination(machine: &ClawMachine, a_count: &i32, b_count: &i32) -> Option<(i32)> {
-        let unique_x_combination =
-            machine.a.point.x * a_count + machine.b.point.x * b_count;
-        let unique_y_combination =
-            machine.a.point.y * a_count + machine.b.point.y * b_count;
-
-        match machine.prize.x % unique_x_combination == 0
-            && machine.prize.y % unique_y_combination == 0
-        {
-            true => {
-                Some(machine.prize.x / unique_x_combination)
-            }
-            false => None,
-        }
+        // self
+        //     .machines
+        //     .iter()
+        //     .filter_map(|machine| {
+        //         let prize_x_by_b = machine.prize.x / machine.b.point.x; // 381
+        //         let prize_y_by_b = machine.prize.y / machine.b.point.y; // 80
+        //
+        //         let ceiling = min(min(prize_x_by_b as i64, prize_y_by_b as i64), 100);
+        //
+        //         (0..ceiling)
+        //             .rev()
+        //             .filter_map(|b_count| {
+        //                 let prize_without_x = machine.prize.x - b_count as i64 * machine.b.point.x;
+        //                 let prize_without_y = machine.prize.y - b_count as i64 * machine.b.point.y;
+        //
+        //                 match prize_without_x % machine.a.point.x == 0_i64 && prize_without_y % machine.a.point.y == 0_i64 {
+        //                     true => {
+        //                         let a_count_x = prize_without_x / machine.a.point.x;
+        //                         let a_count_y = prize_without_y / machine.a.point.y;
+        //
+        //                         dbg!(&a_count_x, &a_count_y, &b_count, &machine.a.point, &machine.b.point);
+        //
+        //                         match a_count_x == a_count_y {
+        //                             true => {Some((a_count_x, b_count))}
+        //                             false => {None}
+        //                         }
+        //                     }
+        //                     false => {None}
+        //                 }
+        //             })
+        //             .filter_map(|(a_count, b_count)| {
+        //                 Some((a_count.round() as i64 * machine.a.cost + b_count * machine.b.cost) as u32)
+        //             }).min()
+        //     })
+        //     .sum()
     }
 
     pub fn part_2(&self) -> u32 {
-        1
+        let increment = 10000000000000_i64;
+        let mut machines = self.machines.clone();
+
+        machines.iter_mut().for_each(|mut machine| {
+            machine.prize.x += increment;
+            machine.prize.y += increment;
+        });
+
+        machines
+            .iter()
+            .filter_map(|machine| {
+                let prize_x_by_b = machine.prize.x / machine.b.point.x;
+                let prize_y_by_b = machine.prize.y / machine.b.point.y;
+
+                let ceiling = min(prize_x_by_b, prize_y_by_b);
+                // dbg!(&ceiling);
+
+                (0..ceiling)
+                    .rev()
+                    .filter_map(|b_count| {
+                        let prize_without_x = machine.prize.x - b_count as i64 * machine.b.point.x;
+                        let prize_without_y = machine.prize.y - b_count as i64 * machine.b.point.y;
+
+                        match prize_without_x % machine.a.point.x == 0_i64 && prize_without_y % machine.a.point.y == 0_i64 {
+                            true => {
+                                let a_count_x = prize_without_x / machine.a.point.x;
+                                let a_count_y = prize_without_y / machine.a.point.y;
+                                
+                                let b_something = a_count_x as i64;
+
+                                // dbg!(&a_count_x, &a_count_y, &b_count, &machine.a.point, &machine.b.point);
+
+                                match a_count_x == a_count_y {
+                                    true => {
+                                        // dbg!("189");
+
+                                        Some((a_count_x, b_count))
+                                    }
+                                    false => {None}
+                                }
+                            }
+                            false => {None}
+                        }
+                    })
+                    .filter_map(|(a_count, b_count)| {
+                        Some((a_count * machine.a.cost + b_count * machine.b.cost) as u32)
+                    }).min()
+            })
+            .sum()
     }
 }
 
