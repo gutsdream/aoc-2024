@@ -115,13 +115,12 @@ impl Puzzle {
                 let mut a_count_x = prize_without_x / machine.a.point.x;
                 let mut a_count_y = prize_without_y / machine.a.point.y;
 
-                let mut direction = Down;
-
                 while ceiling - floor > 1
                 {
                     let (new_a_count_x, new_a_count_y) = Self::get_a_pair(machine, mid_point);
 
                     if new_a_count_x == new_a_count_y{
+                        println!("{},{}",&new_a_count_x, &mid_point);
                         return Some(new_a_count_x * machine.a.cost + mid_point * machine.b.cost);
                     }
 
