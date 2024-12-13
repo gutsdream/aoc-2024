@@ -202,6 +202,7 @@ dependencies = [
  "divan",
  "eyre",
  "itertools",
+ "rayon",
  "regex",
 ]
 
