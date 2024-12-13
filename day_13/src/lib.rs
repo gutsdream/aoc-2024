@@ -1,9 +1,11 @@
-use std::cmp::{max, min};
 use eyre::Context;
-use itertools::{iproduct, Itertools};
-use regex::Regex;
-use std::str::FromStr;
+use itertools::Itertools;
 use rayon::prelude::*;
+use regex::Regex;
+use std::cmp::{max, min, Ordering};
+use std::str::FromStr;
+use Direction::Up;
+use crate::Direction::Down;
 
 #[derive(Debug, Clone)]
 struct Point {
@@ -51,6 +53,11 @@ pub struct Puzzle {
     pub machines: Vec<ClawMachine>,
 }
 
+enum Direction{
+    Up,
+    Down
+}
+
 impl FromStr for Puzzle {
     type Err = ();
 
@@ -92,64 +99,68 @@ impl FromStr for Puzzle {
 impl Puzzle {
     pub fn part_1(&self) -> i64 {
         self.machines
-            .par_iter()
+            .iter()
             .filter_map(|machine| {
-                let mut zero_to_two_patterns = (0..100)
-                    .rev()
-                    .filter_map(|b_count| {
-                        let prize_without_x = machine.prize.x - b_count * machine.b.point.x;
-                        let prize_without_y = machine.prize.y - b_count * machine.b.point.y;
+                let prize_x_by_b = machine.prize.x / machine.b.point.x;
+                let prize_y_by_b = machine.prize.y / machine.b.point.y;
 
-                        match prize_without_x % machine.a.point.x == 0_i64 && prize_without_y % machine.a.point.y == 0_i64 {
-                            true => {
-                                let a_count_x = prize_without_x / machine.a.point.x;
-                                let a_count_y = prize_without_y / machine.a.point.y;
+                let mut floor = 0;
 
-                                Some((a_count_x, a_count_y, b_count))
-                            }
-                            false => {None}
-                        }
-                    })
-                    .take(2);
+                let mut ceiling = min(min(prize_x_by_b + 1, prize_y_by_b + 1), 100_i64);
 
-                match zero_to_two_patterns.next() {
-                    Some(first) => match zero_to_two_patterns.next() {
-                        Some(second) => {
-                            let mut costs : Vec<i64> = Vec::new();
-                            let a_x_diff = second.0 - first.0;
-                            let a_y_diff = second.1 - first.1;
-                            let b_diff = first.2 - second.2;
+                let prize_without_x = machine.prize.x - ceiling * machine.b.point.x;
+                let prize_without_y = machine.prize.y - ceiling * machine.b.point.y;
 
+                let mut mid_point = (ceiling + floor) / 2;
+                let mut a_count_x = prize_without_x / machine.a.point.x;
+                let mut a_count_y = prize_without_y / machine.a.point.y;
 
-                            let mut a_x = first.0;
-                            let mut a_y = first.1;
-                            let mut b = first.2;
+                let mut direction = Down;
 
-                            while b >= 0{
-                                if a_x == a_y{
-                                    costs.push(machine.a.cost * a_x + machine.b.cost * b)
-                                }
+                while ceiling - floor > 1
+                {
+                    let (new_a_count_x, new_a_count_y) = Self::get_a_pair(machine, mid_point);
 
-                                a_x += a_x_diff;
-                                a_y += a_y_diff;
-                                b -= b_diff
-                            }
+                    if new_a_count_x == new_a_count_y{
+                        return Some(new_a_count_x * machine.a.cost + mid_point * machine.b.cost);
+                    }
 
-                            costs.into_iter().min()
-                        }
-                        None => {
-                            match first.0 == first.1 {
-                                true => {
-                                    Some(machine.a.cost * first.0 + machine.b.cost * first.2)
-                                }
-                                false => {None}
-                            }
-                        }
-                    },
-                    None => None,
+                    let diff_prev = Self::pair_diff((a_count_x, a_count_y));
+                    let diff_curr = Self::pair_diff((new_a_count_x, new_a_count_y));
+
+                    let up_one_pair = Self::get_a_pair(machine, mid_point + 1);
+                    let up_one_diff = Self::pair_diff(up_one_pair);
+
+                    let down_one_pair = Self::get_a_pair(machine, mid_point - 1);
+                    let down_one_diff = Self::pair_diff(down_one_pair);
+
+                    match up_one_diff.cmp(&down_one_diff){
+                        Ordering::Less => {floor = mid_point}
+                        Ordering::Equal => {return None}
+                        Ordering::Greater => {ceiling = mid_point}
+                    }
+
+                    mid_point = (ceiling + floor) / 2;
+                    a_count_x = new_a_count_x;
+                    a_count_y = new_a_count_y;
                 }
+
+                None
             })
             .sum()
+    }
+
+    fn pair_diff(a_count: (i64, i64)) -> i64 {
+        i64::abs(a_count.0 - a_count.1)
+    }
+
+    fn get_a_pair(machine: &ClawMachine, mut mid_point: i64) -> (i64, i64) {
+        let prize_without_x = machine.prize.x - mid_point * machine.b.point.x;
+        let prize_without_y = machine.prize.y - mid_point * machine.b.point.y;
+
+        let new_a_count_x = prize_without_x / machine.a.point.x;
+        let new_a_count_y = prize_without_y / machine.a.point.y;
+        (new_a_count_x, new_a_count_y)
     }
 
     pub fn part_2(&self) -> i64 {
@@ -169,7 +180,7 @@ impl Puzzle {
 
                 let ceiling = max(prize_x_by_b as i64, prize_y_by_b as i64);
 
-                let mut zero_to_two_patterns = (0..ceiling)
+                let mut zero_to_two_patterns = (0..100)
                     .rev()
                     .filter_map(|b_count| {
                         let prize_without_x = machine.prize.x - b_count * machine.b.point.x;
@@ -194,7 +205,6 @@ impl Puzzle {
                             let a_x_diff = second.0 - first.0;
                             let a_y_diff = second.1 - first.1;
                             let b_diff = first.2 - second.2;
-
 
                             let mut a_x = first.0;
                             let mut a_y = first.1;
@@ -231,7 +241,8 @@ impl Puzzle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const INPUT: &str = "Button A: X+94, Y+34
+    const INPUT: &str =
+        "Button A: X+94, Y+34
 Button B: X+22, Y+67
 Prize: X=8400, Y=5400
 
