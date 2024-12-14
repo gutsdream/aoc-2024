@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use regex::Regex;
 use std::cmp::{max, min, Ordering};
 use std::str::FromStr;
+use float_cmp::approx_eq;
 use Direction::Up;
 use crate::Direction::Down;
 
@@ -101,65 +102,9 @@ impl Puzzle {
         self.machines
             .iter()
             .filter_map(|machine| {
-                let prize_x_by_b = machine.prize.x / machine.b.point.x;
-                let prize_y_by_b = machine.prize.y / machine.b.point.y;
-
-                let mut floor = 0;
-
-                let mut ceiling = min(min(prize_x_by_b + 1, prize_y_by_b + 1), 100_i64);
-
-                let prize_without_x = machine.prize.x - ceiling * machine.b.point.x;
-                let prize_without_y = machine.prize.y - ceiling * machine.b.point.y;
-
-                let mut mid_point = (ceiling + floor) / 2;
-                let mut a_count_x = prize_without_x / machine.a.point.x;
-                let mut a_count_y = prize_without_y / machine.a.point.y;
-
-                while ceiling - floor > 1
-                {
-                    let (new_a_count_x, new_a_count_y) = Self::get_a_pair(machine, mid_point);
-
-                    if new_a_count_x == new_a_count_y{
-                        println!("{},{}",&new_a_count_x, &mid_point);
-                        return Some(new_a_count_x * machine.a.cost + mid_point * machine.b.cost);
-                    }
-
-                    let diff_prev = Self::pair_diff((a_count_x, a_count_y));
-                    let diff_curr = Self::pair_diff((new_a_count_x, new_a_count_y));
-
-                    let up_one_pair = Self::get_a_pair(machine, mid_point + 1);
-                    let up_one_diff = Self::pair_diff(up_one_pair);
-
-                    let down_one_pair = Self::get_a_pair(machine, mid_point - 1);
-                    let down_one_diff = Self::pair_diff(down_one_pair);
-
-                    match up_one_diff.cmp(&down_one_diff){
-                        Ordering::Less => {floor = mid_point}
-                        Ordering::Equal => {return None}
-                        Ordering::Greater => {ceiling = mid_point}
-                    }
-
-                    mid_point = (ceiling + floor) / 2;
-                    a_count_x = new_a_count_x;
-                    a_count_y = new_a_count_y;
-                }
-
-                None
+                Self::prize_cost(machine, Some(100))
             })
             .sum()
-    }
-
-    fn pair_diff(a_count: (i64, i64)) -> i64 {
-        i64::abs(a_count.0 - a_count.1)
-    }
-
-    fn get_a_pair(machine: &ClawMachine, mut mid_point: i64) -> (i64, i64) {
-        let prize_without_x = machine.prize.x - mid_point * machine.b.point.x;
-        let prize_without_y = machine.prize.y - mid_point * machine.b.point.y;
-
-        let new_a_count_x = prize_without_x / machine.a.point.x;
-        let new_a_count_y = prize_without_y / machine.a.point.y;
-        (new_a_count_x, new_a_count_y)
     }
 
     pub fn part_2(&self) -> i64 {
@@ -172,68 +117,74 @@ impl Puzzle {
         });
 
         machines
-            .par_iter()
+            .iter()
             .filter_map(|machine| {
-                let prize_x_by_b = machine.prize.x / machine.b.point.x; // 381
-                let prize_y_by_b = machine.prize.y / machine.b.point.y; // 80
-
-                let ceiling = max(prize_x_by_b as i64, prize_y_by_b as i64);
-
-                let mut zero_to_two_patterns = (0..100)
-                    .rev()
-                    .filter_map(|b_count| {
-                        let prize_without_x = machine.prize.x - b_count * machine.b.point.x;
-                        let prize_without_y = machine.prize.y - b_count * machine.b.point.y;
-
-                        match prize_without_x % machine.a.point.x == 0_i64 && prize_without_y % machine.a.point.y == 0_i64 {
-                            true => {
-                                let a_count_x = prize_without_x / machine.a.point.x;
-                                let a_count_y = prize_without_y / machine.a.point.y;
-
-                                Some((a_count_x, a_count_y, b_count))
-                            }
-                            false => { None }
-                        }
-                    })
-                    .take(2);
-
-                match zero_to_two_patterns.next() {
-                    Some(first) => match zero_to_two_patterns.next() {
-                        Some(second) => {
-                            let mut costs: Vec<i64> = Vec::new();
-                            let a_x_diff = second.0 - first.0;
-                            let a_y_diff = second.1 - first.1;
-                            let b_diff = first.2 - second.2;
-
-                            let mut a_x = first.0;
-                            let mut a_y = first.1;
-                            let mut b = first.2;
-
-                            while b >= 0 {
-                                if a_x == a_y {
-                                    costs.push(machine.a.cost * a_x + machine.b.cost * b)
-                                }
-
-                                a_x += a_x_diff;
-                                a_y += a_y_diff;
-                                b -= b_diff
-                            }
-
-                            costs.into_iter().min()
-                        }
-                        None => {
-                            match first.0 == first.1 {
-                                true => {
-                                    Some(machine.a.cost * first.0 + machine.b.cost * first.2)
-                                }
-                                false => { None }
-                            }
-                        }
-                    },
-                    None => None,
-                }
+                Self::prize_cost(machine, None)
             })
             .sum()
+    }
+
+    fn prize_cost(machine: &ClawMachine, ceiling: Option<i64>) -> Option<i64> {
+        let prize_x_by_b = machine.prize.x / machine.b.point.x;
+        let prize_y_by_b = machine.prize.y / machine.b.point.y;
+
+        let mut floor = 0;
+
+        let mut ceiling = match ceiling {
+            None => {
+                min(prize_x_by_b + 1, prize_y_by_b + 1)
+            }
+            Some(ceiling) => {
+                min(min(prize_x_by_b + 1, prize_y_by_b + 1), ceiling)
+            }
+        };
+
+        let prize_without_x = machine.prize.x - ceiling * machine.b.point.x;
+        let prize_without_y = machine.prize.y - ceiling * machine.b.point.y;
+
+        let mut mid_point = (ceiling + floor) / 2;
+        let mut a_count_x = prize_without_x as f64 / machine.a.point.x as f64;
+        let mut a_count_y = prize_without_y as f64 / machine.a.point.y as f64;
+
+        while ceiling - floor > 1
+        {
+            let (new_a_count_x, new_a_count_y) = Self::get_a_pair(machine, mid_point);
+
+            if approx_eq!(f64, new_a_count_x, new_a_count_y, ulps = 2) {
+                return Some(new_a_count_x.round() as i64 * machine.a.cost + mid_point * machine.b.cost);
+            }
+
+            let up_one_pair = Self::get_a_pair(machine, mid_point + 1);
+            let up_one_diff = Self::pair_diff(up_one_pair);
+
+            let down_one_pair = Self::get_a_pair(machine, mid_point - 1);
+            let down_one_diff = Self::pair_diff(down_one_pair);
+
+            match up_one_diff.partial_cmp(&down_one_diff) {
+                Some(Ordering::Less) => { floor = mid_point }
+                Some(Ordering::Greater) => { ceiling = mid_point }
+                _ => { return None }
+            }
+
+            mid_point = (ceiling + floor) / 2;
+            a_count_x = new_a_count_x;
+            a_count_y = new_a_count_y;
+        }
+
+        None
+    }
+
+    fn pair_diff(a_count: (f64, f64)) -> f64 {
+        f64::abs(a_count.0 - a_count.1)
+    }
+
+    fn get_a_pair(machine: &ClawMachine, mut mid_point: i64) -> (f64, f64) {
+        let prize_without_x = machine.prize.x - mid_point * machine.b.point.x;
+        let prize_without_y = machine.prize.y - mid_point * machine.b.point.y;
+
+        let new_a_count_x = prize_without_x as f64 / machine.a.point.x as f64;
+        let new_a_count_y = prize_without_y as f64 / machine.a.point.y as f64;
+        (new_a_count_x, new_a_count_y)
     }
 }
 
