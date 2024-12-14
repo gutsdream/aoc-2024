@@ -1,12 +1,9 @@
 use eyre::Context;
 use itertools::Itertools;
-use rayon::prelude::*;
 use regex::Regex;
-use std::cmp::{max, min, Ordering};
+use std::cmp::{min, Ordering};
 use std::str::FromStr;
 use float_cmp::approx_eq;
-use Direction::Up;
-use crate::Direction::Down;
 
 #[derive(Debug, Clone)]
 struct Point {
@@ -151,7 +148,13 @@ impl Puzzle {
             let (new_a_count_x, new_a_count_y) = Self::get_a_pair(machine, mid_point);
 
             if approx_eq!(f64, new_a_count_x, new_a_count_y, ulps = 2) {
-                return Some(new_a_count_x.round() as i64 * machine.a.cost + mid_point * machine.b.cost);
+                let a_multiplier = new_a_count_x.round() as i64;
+                let x = a_multiplier * machine.a.point.x + mid_point * machine.b.point.x;
+                let y = a_multiplier * machine.a.point.y + mid_point * machine.b.point.y;
+
+                if machine.prize.x == x && machine.prize.y == y {
+                    return Some(new_a_count_x.round() as i64 * machine.a.cost + mid_point * machine.b.cost);
+                }
             }
 
             let up_one_pair = Self::get_a_pair(machine, mid_point + 1);
@@ -221,7 +224,6 @@ Prize: X=18641, Y=10279";
     }
 
     #[test]
-    #[ignore] // this is currently way too unoptimized
     fn should_solve_part_2() {
         // Given
         let puzzle = Puzzle::from_str(INPUT).unwrap();
@@ -230,6 +232,6 @@ Prize: X=18641, Y=10279";
         let sum = puzzle.part_2();
 
         // Then
-        assert_eq!(1, sum);
+        assert_eq!(875318608908, sum);
     }
 }

@@ -209,7 +209,6 @@ dependencies = [
  "eyre",
  "float-cmp",
  "itertools",
- "rayon",
  "regex",
 ]
 
