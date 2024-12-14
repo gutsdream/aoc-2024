@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 divan = "0.1.16"
 eyre = "0.6.12"
+float-cmp = "0.10.0"
 itertools = "0.13.0"
-rayon = "1.10.0"
 regex = "1.11.1"
 
 [[bench]]
