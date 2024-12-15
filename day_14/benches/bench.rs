@@ -15,6 +15,7 @@ fn part1() {
 }
 
 #[divan::bench]
+#[ignore]
 fn part2() {
     let input = divan::black_box(fs::read_to_string("./input.txt").unwrap());
     let puzzle = Puzzle::from_str(input.as_str()).unwrap();
